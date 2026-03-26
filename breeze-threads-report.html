@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breeze Airways - Threads Intelligence Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0a0a0a; color: #e0e0e0; line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+
+  /* Header */
+  .header { text-align: center; padding: 60px 0 40px; }
+  .header .badge { display: inline-block; background: linear-gradient(135deg, #00a3ff, #0066ff); color: white; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding: 6px 16px; border-radius: 20px; margin-bottom: 20px; }
+  .header h1 { font-size: 42px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -1px; }
+  .header .subtitle { font-size: 16px; color: #666; font-weight: 400; }
+  .header .date { font-size: 13px; color: #444; margin-top: 12px; }
+
+  /* Tabs */
+  .tab-nav { display: flex; border-bottom: 1px solid #1a1a1a; margin-bottom: 48px; margin-top: 32px; }
+  .tab-btn { background: none; border: none; color: #555; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; padding: 16px 28px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .tab-btn:hover { color: #999; }
+  .tab-btn.active { color: #fff; border-bottom-color: #00a3ff; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Sections */
+  .section { margin-bottom: 56px; }
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: #00a3ff; margin-bottom: 8px; }
+  .section h2 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 24px; letter-spacing: -0.5px; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card { background: #111; border: 1px solid #1a1a1a; border-radius: 16px; padding: 24px; text-align: center; }
+  .stat-card .number { font-size: 36px; font-weight: 800; color: #fff; line-height: 1; margin-bottom: 4px; }
+  .stat-card .label { font-size: 13px; color: #666; font-weight: 500; }
+  .stat-card.highlight { border-color: #00a3ff33; background: linear-gradient(135deg, #0a1628, #111); }
+  .stat-card.highlight .number { color: #00a3ff; }
+  .stat-card.warning { border-color: #ff4d4d33; background: linear-gradient(135deg, #1a0a0a, #111); }
+  .stat-card.warning .number { color: #ff4d4d; }
+
+  /* Alert */
+  .alert { background: linear-gradient(135deg, #1a0a0a, #150808); border: 1px solid #ff4d4d33; border-radius: 16px; padding: 28px 32px; margin-bottom: 32px; display: flex; align-items: flex-start; gap: 16px; }
+  .alert .icon { font-size: 28px; flex-shrink: 0; }
+  .alert h3 { color: #ff6b6b; font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .alert p { color: #999; font-size: 14px; line-height: 1.6; }
+  .alert .compare { color: #ff6b6b; font-weight: 600; }
+
+  /* Table */
+  .content-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .content-table th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #555; padding: 12px 16px; border-bottom: 1px solid #1a1a1a; }
+  .content-table td { padding: 16px; border-bottom: 1px solid #111; font-size: 14px; }
+  .content-table tr:hover { background: #111; }
+  .content-table .post-title { color: #fff; font-weight: 500; }
+  .content-table .metric { color: #888; font-weight: 500; text-align: center; }
+  .content-table .metric.zero { color: #ff4d4d; }
+  .content-table .rank { color: #444; font-weight: 700; font-size: 16px; width: 40px; }
+
+  /* Demographics */
+  .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .demo-card { background: #111; border: 1px solid #1a1a1a; border-radius: 16px; padding: 28px; }
+  .demo-card h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 20px; }
+  .bar-row { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
+  .bar-label { font-size: 13px; color: #999; width: 100px; flex-shrink: 0; font-weight: 500; }
+  .bar-track { flex: 1; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #00a3ff, #0066ff); }
+  .bar-fill.pink { background: linear-gradient(90deg, #ff6bb5, #ff4d8d); }
+  .bar-fill.green { background: linear-gradient(90deg, #00d68f, #00b87a); }
+  .bar-value { font-size: 13px; color: #fff; font-weight: 600; width: 50px; text-align: right; flex-shrink: 0; }
+
+  /* Rules */
+  .rule-list { list-style: none; }
+  .rule-list li { display: flex; align-items: flex-start; gap: 16px; padding: 16px 0; border-bottom: 1px solid #111; }
+  .rule-list .rule-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; background: #1a1a1a; }
+  .rule-list h4 { font-size: 14px; color: #fff; font-weight: 600; margin-bottom: 2px; }
+  .rule-list p { font-size: 13px; color: #666; }
+
+  /* Trending */
+  .trending-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .trend-card { background: #111; border: 1px solid #1a1a1a; border-radius: 16px; padding: 24px; transition: border-color 0.2s; }
+  .trend-card:hover { border-color: #333; }
+  .trend-card .trend-tag { display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding: 4px 10px; border-radius: 8px; margin-bottom: 12px; }
+  .trend-card .trend-tag.hot { background: #ff4d4d22; color: #ff6b6b; }
+  .trend-card .trend-tag.travel { background: #00a3ff22; color: #00a3ff; }
+  .trend-card .trend-tag.culture { background: #a855f722; color: #c084fc; }
+  .trend-card .trend-tag.brand { background: #00d68f22; color: #00d68f; }
+  .trend-card h4 { font-size: 15px; color: #fff; font-weight: 600; margin-bottom: 8px; }
+  .trend-card p { font-size: 13px; color: #777; line-height: 1.5; }
+  .trend-card .engagement { margin-top: 12px; font-size: 12px; color: #555; font-weight: 500; }
+  .trend-card .engagement span { color: #00a3ff; font-weight: 700; }
+
+  /* ========== CALENDAR GRID ========== */
+  .cal-controls { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .cal-controls h2 { margin-bottom: 0; }
+  .cal-controls .cal-nav { display: flex; gap: 8px; }
+  .cal-controls .cal-nav button { background: #111; border: 1px solid #1a1a1a; color: #888; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+  .cal-controls .cal-nav button:hover { border-color: #333; color: #fff; }
+  .cal-legend { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+  .cal-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #666; font-weight: 500; padding: 4px 10px; border-radius: 8px; border: 1px solid transparent; cursor: default; position: relative; }
+  .cal-legend-item:hover { border-color: #222; background: #111; }
+  .cal-legend-item .legend-remove { display: none; background: none; border: none; color: #555; font-size: 12px; cursor: pointer; padding: 0 0 0 4px; line-height: 1; }
+  .cal-legend-item:hover .legend-remove { display: inline; }
+  .cal-legend-item .legend-remove:hover { color: #ff6b6b; }
+  .cal-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .cal-legend-add { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: #111; border: 1px dashed #333; color: #555; font-size: 16px; cursor: pointer; transition: all 0.15s; }
+  .cal-legend-add:hover { border-color: #00a3ff; color: #00a3ff; background: #0a1628; }
+  .legend-edit-name { background: none; border: none; border-bottom: 1px solid #333; color: #e0e0e0; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; width: 80px; outline: none; padding: 0 0 1px; }
+  .legend-edit-name:focus { border-bottom-color: #00a3ff; }
+
+  /* Category Modal */
+  .cat-modal { background: #111; border: 1px solid #222; border-radius: 16px; width: 400px; max-width: 90vw; padding: 0; }
+  .cat-modal .modal-header { padding: 20px 24px 0; }
+  .cat-modal .modal-body { padding: 20px 24px 24px; }
+  .cat-color-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .cat-color-opt { width: 28px; height: 28px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; transition: all 0.15s; }
+  .cat-color-opt:hover { transform: scale(1.15); }
+  .cat-color-opt.selected { border-color: #fff; box-shadow: 0 0 0 2px #00a3ff; }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #1a1a1a; border-radius: 16px; overflow: hidden; border: 1px solid #1a1a1a; }
+  .cal-header-cell { background: #111; padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #555; }
+  .cal-cell { background: #0d0d0d; min-height: 120px; padding: 10px; position: relative; transition: background 0.15s; cursor: pointer; }
+  .cal-cell:hover { background: #141414; }
+  .cal-cell.other-month { opacity: 0.3; }
+  .cal-cell.today { background: #0a1628; }
+  .cal-cell.today .cal-date { color: #00a3ff; }
+  .cal-date { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+  .cal-event { font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 6px; margin-bottom: 4px; cursor: pointer; transition: all 0.15s; line-height: 1.4; display: block; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-event:hover { filter: brightness(1.3); transform: translateY(-1px); }
+  .cal-event.timely { background: #f59e0b22; color: #f59e0b; border-left: 3px solid #f59e0b; }
+  .cal-event.engagement { background: #00a3ff22; color: #00a3ff; border-left: 3px solid #00a3ff; }
+  .cal-event.brand { background: #00d68f22; color: #00d68f; border-left: 3px solid #00d68f; }
+  .cal-event.vibe { background: #06b6d422; color: #06b6d4; border-left: 3px solid #06b6d4; }
+  .cal-event.destination { background: #ec489922; color: #ec4899; border-left: 3px solid #ec4899; }
+  .cal-event.crew { background: #a855f722; color: #c084fc; border-left: 3px solid #a855f7; }
+  .cal-add-btn { display: none; position: absolute; bottom: 8px; right: 8px; width: 22px; height: 22px; border-radius: 6px; background: #1a1a1a; border: 1px solid #333; color: #555; font-size: 14px; cursor: pointer; align-items: center; justify-content: center; transition: all 0.15s; }
+  .cal-cell:hover .cal-add-btn { display: flex; }
+  .cal-add-btn:hover { background: #00a3ff; color: #fff; border-color: #00a3ff; }
+
+  /* ========== EVENT MODAL ========== */
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #111; border: 1px solid #222; border-radius: 20px; width: 560px; max-width: 90vw; max-height: 85vh; overflow-y: auto; padding: 0; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 28px 0; }
+  .modal-header h3 { font-size: 18px; font-weight: 700; color: #fff; }
+  .modal-close { background: none; border: none; color: #555; font-size: 22px; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: all 0.15s; }
+  .modal-close:hover { background: #1a1a1a; color: #fff; }
+  .modal-body { padding: 24px 28px 28px; }
+  .modal-field { margin-bottom: 20px; }
+  .modal-field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #555; margin-bottom: 8px; }
+  .modal-field input, .modal-field textarea, .modal-field select {
+    width: 100%; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 10px; padding: 12px 16px;
+    color: #e0e0e0; font-family: 'Inter', sans-serif; font-size: 14px; transition: border-color 0.2s; outline: none;
+  }
+  .modal-field input:focus, .modal-field textarea:focus, .modal-field select:focus { border-color: #00a3ff; }
+  .modal-field textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+  .modal-field select { appearance: none; cursor: pointer; }
+  .modal-field select option { background: #111; }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .modal-actions { display: flex; gap: 12px; justify-content: flex-end; padding-top: 8px; }
+  .modal-actions button { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; padding: 10px 24px; border-radius: 10px; cursor: pointer; transition: all 0.15s; border: none; }
+  .btn-save { background: linear-gradient(135deg, #00a3ff, #0066ff); color: #fff; }
+  .btn-save:hover { filter: brightness(1.15); }
+  .btn-delete { background: #1a0a0a; color: #ff6b6b; border: 1px solid #ff4d4d33 !important; }
+  .btn-delete:hover { background: #ff4d4d22; }
+  .btn-cancel { background: #1a1a1a; color: #888; }
+  .btn-cancel:hover { color: #fff; }
+
+  /* Tags */
+  .tags-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .tag-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 8px; background: #1a1a1a; color: #999; border: 1px solid #222; }
+  .tag-chip .tag-remove { background: none; border: none; color: #555; font-size: 14px; cursor: pointer; padding: 0; line-height: 1; transition: color 0.15s; }
+  .tag-chip .tag-remove:hover { color: #ff6b6b; }
+  .tag-chip.tag-color-blue { background: #00a3ff15; color: #00a3ff; border-color: #00a3ff33; }
+  .tag-chip.tag-color-green { background: #00d68f15; color: #00d68f; border-color: #00d68f33; }
+  .tag-chip.tag-color-orange { background: #f59e0b15; color: #f59e0b; border-color: #f59e0b33; }
+  .tag-chip.tag-color-pink { background: #ec489915; color: #ec4899; border-color: #ec489933; }
+  .tag-chip.tag-color-purple { background: #a855f715; color: #c084fc; border-color: #a855f733; }
+  .tag-chip.tag-color-red { background: #ff4d4d15; color: #ff6b6b; border-color: #ff4d4d33; }
+  .tag-chip.tag-color-cyan { background: #06b6d415; color: #06b6d4; border-color: #06b6d433; }
+  .tag-input-row { display: flex; gap: 8px; }
+  .tag-input-row input { flex: 1; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 8px 12px; color: #e0e0e0; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; }
+  .tag-input-row input:focus { border-color: #00a3ff; }
+  .tag-input-row select { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 8px 10px; color: #e0e0e0; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; appearance: none; width: 100px; cursor: pointer; }
+  .tag-input-row button { background: #1a1a1a; border: 1px solid #333; color: #888; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .tag-input-row button:hover { background: #00a3ff; color: #fff; border-color: #00a3ff; }
+  .cal-event-tags { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 3px; }
+  .cal-mini-tag { font-size: 8px; font-weight: 600; padding: 1px 5px; border-radius: 4px; background: #1a1a1a; color: #666; line-height: 1.4; }
+
+  .footer { text-align: center; padding: 48px 0 24px; border-top: 1px solid #1a1a1a; margin-top: 48px; }
+  .footer p { font-size: 12px; color: #333; }
+
+  /* ========== RECOMMENDATION ACCORDION ========== */
+  .rec-group { margin-bottom: 12px; border: 1px solid #1a1a1a; border-radius: 16px; overflow: hidden; }
+  .rec-group-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; cursor: pointer; user-select: none; transition: background 0.15s; background: #111; }
+  .rec-group-header:hover { background: #161616; }
+  .rec-group-header .rec-date-left { display: flex; align-items: center; gap: 14px; }
+  .rec-group-header .rec-date-text { font-size: 15px; font-weight: 700; color: #fff; }
+  .rec-group-header .rec-date-count { font-size: 12px; font-weight: 600; color: #555; background: #1a1a1a; padding: 3px 10px; border-radius: 20px; }
+  .rec-group-header .rec-date-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; padding: 3px 10px; border-radius: 20px; background: #00a3ff22; color: #00a3ff; }
+  .rec-group-header .rec-chevron { font-size: 18px; color: #444; transition: transform 0.25s; line-height: 1; }
+  .rec-group.open .rec-group-header .rec-chevron { transform: rotate(180deg); color: #00a3ff; }
+  .rec-group.open .rec-group-header { border-bottom: 1px solid #1a1a1a; }
+  .rec-group-body { display: none; padding: 24px; background: #0d0d0d; }
+  .rec-group.open .rec-group-body { display: block; }
+
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .demo-grid, .trending-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 28px; }
+    .tab-btn { padding: 12px 14px; font-size: 12px; }
+    .cal-cell { min-height: 80px; padding: 6px; }
+    .cal-event { font-size: 9px; padding: 2px 4px; }
+    .modal { width: 95vw; }
+    .modal-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="badge">Threads Intelligence Report</div>
+    <h1>Breeze Airways</h1>
+    <div class="subtitle">Platform analysis, trending topics & content strategy</div>
+    <div class="date">Data period: Feb 23 &ndash; Mar 26, 2026 &middot; Report generated Mar 26, 2026</div>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('insights', this)">Account Insights</button>
+    <button class="tab-btn" onclick="switchTab('trending', this)">Trending Now</button>
+    <button class="tab-btn" onclick="switchTab('recommended', this)">Recommended Posts</button>
+    <button class="tab-btn" onclick="switchTab('calendar', this)">Content Calendar</button>
+  </div>
+
+  <!-- ====== TAB 1: INSIGHTS ====== -->
+  <div id="tab-insights" class="tab-content active">
+    <div class="section">
+      <div class="section-label">Account Performance</div>
+      <h2>30-Day Snapshot</h2>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="number">8,499</div><div class="label">Total Views</div></div>
+        <div class="stat-card"><div class="number">403</div><div class="label">Interactions</div></div>
+        <div class="stat-card highlight"><div class="number">21.1K</div><div class="label">Followers</div></div>
+        <div class="stat-card warning"><div class="number">21</div><div class="label">Total Comments</div></div>
+      </div>
+      <div class="alert">
+        <div class="icon">&#9888;&#65039;</div>
+        <div>
+          <h3>Critical: Comment Volume is Near Zero</h3>
+          <p>Only <span class="compare">21 comments in 30 days</span>. Threads prioritizes comment-to-like ratio. A single Subway post got 543 comments. Breeze's entire month got 21.</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="number">374</div><div class="label">Likes</div></div>
+        <div class="stat-card warning"><div class="number">21</div><div class="label">Replies</div></div>
+        <div class="stat-card"><div class="number">5</div><div class="label">Reposts</div></div>
+        <div class="stat-card"><div class="number">3</div><div class="label">Quotes</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Content Analysis</div>
+      <h2>Top Performing Posts</h2>
+      <table class="content-table">
+        <thead><tr><th>#</th><th>Post</th><th>Views</th><th>Likes</th><th>Comments</th><th>Age</th></tr></thead>
+        <tbody>
+          <tr><td class="rank">1</td><td class="post-title">A day in a life of a Breeze Airways A220 First Officer</td><td class="metric">615</td><td class="metric">16</td><td class="metric zero">0</td><td class="metric">2w</td></tr>
+          <tr><td class="rank">2</td><td class="post-title">2 NEW cities just for you!</td><td class="metric">551</td><td class="metric">7</td><td class="metric">1</td><td class="metric">4w</td></tr>
+          <tr><td class="rank">3</td><td class="post-title">A certified nice crew has entered the chat</td><td class="metric">493</td><td class="metric">18</td><td class="metric zero">0</td><td class="metric">3w</td></tr>
+          <tr><td class="rank">4</td><td class="post-title">A day in the life of a Breeze Airways Flight Attendant</td><td class="metric">409</td><td class="metric">8</td><td class="metric zero">0</td><td class="metric">3w</td></tr>
+          <tr><td class="rank">5</td><td class="post-title">A day in the life of a Aircraft Maintenance Technician</td><td class="metric">343</td><td class="metric">3</td><td class="metric zero">0</td><td class="metric">3w</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:13px;color:#555;margin-top:16px;padding-left:16px;border-left:2px solid #1a1a1a;"><strong style="color:#888;">Takeaway:</strong> Crew content drives views. Zero comments = no algo boost. Every post needs a question or CTA.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Audience</div>
+      <h2>Who's Following Breeze</h2>
+      <div class="demo-grid">
+        <div class="demo-card">
+          <h3>Age Range</h3>
+          <div class="bar-row"><div class="bar-label">35-44</div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><div class="bar-value">28.0%</div></div>
+          <div class="bar-row"><div class="bar-label">45-54</div><div class="bar-track"><div class="bar-fill" style="width:83%"></div></div><div class="bar-value">23.2%</div></div>
+          <div class="bar-row"><div class="bar-label">25-34</div><div class="bar-track"><div class="bar-fill" style="width:63%"></div></div><div class="bar-value">17.6%</div></div>
+          <div class="bar-row"><div class="bar-label">55-64</div><div class="bar-track"><div class="bar-fill" style="width:56%"></div></div><div class="bar-value">15.8%</div></div>
+          <div class="bar-row"><div class="bar-label">65+</div><div class="bar-track"><div class="bar-fill" style="width:26%"></div></div><div class="bar-value">7.3%</div></div>
+          <div class="bar-row"><div class="bar-label">18-24</div><div class="bar-track"><div class="bar-fill" style="width:24%"></div></div><div class="bar-value">6.7%</div></div>
+          <div class="bar-row"><div class="bar-label">13-17</div><div class="bar-track"><div class="bar-fill" style="width:5%"></div></div><div class="bar-value">1.3%</div></div>
+        </div>
+        <div class="demo-card">
+          <h3>Top Cities</h3>
+          <div class="bar-row"><div class="bar-label">New York</div><div class="bar-track"><div class="bar-fill green" style="width:100%"></div></div><div class="bar-value">1.9%</div></div>
+          <div class="bar-row"><div class="bar-label">Los Angeles</div><div class="bar-track"><div class="bar-fill green" style="width:58%"></div></div><div class="bar-value">1.1%</div></div>
+          <div class="bar-row"><div class="bar-label">New Orleans</div><div class="bar-track"><div class="bar-fill green" style="width:58%"></div></div><div class="bar-value">1.1%</div></div>
+          <div class="bar-row"><div class="bar-label">Jacksonville</div><div class="bar-track"><div class="bar-fill green" style="width:47%"></div></div><div class="bar-value">0.9%</div></div>
+          <div class="bar-row"><div class="bar-label">Charleston</div><div class="bar-track"><div class="bar-fill green" style="width:42%"></div></div><div class="bar-value">0.8%</div></div>
+          <h3 style="margin-top:28px;">Gender</h3>
+          <div class="bar-row"><div class="bar-label">Female</div><div class="bar-track"><div class="bar-fill pink" style="width:100%"></div></div><div class="bar-value">48.5%</div></div>
+          <div class="bar-row"><div class="bar-label">Male</div><div class="bar-track"><div class="bar-fill" style="width:89%"></div></div><div class="bar-value">43.0%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Algorithm Insights</div>
+      <h2>What Threads Rewards</h2>
+      <ul class="rule-list">
+        <li><div class="rule-icon">&#128172;</div><div><h4>Comments Over Everything</h4><p>High comment-to-like ratio = massive distribution boost.</p></div></li>
+        <li><div class="rule-icon">&#10067;</div><div><h4>Questions Drive Distribution</h4><p>Every top brand post asks a question. Proven format.</p></div></li>
+        <li><div class="rule-icon">&#9889;</div><div><h4>Short Beats Long</h4><p>One-liners outperform paragraphs. Subway got 5.6K likes for one word.</p></div></li>
+        <li><div class="rule-icon">&#128197;</div><div><h4>Timeliness Gets Boosted</h4><p>Posts tied to current events get pushed. Real-time relevance matters.</p></div></li>
+        <li><div class="rule-icon">&#129309;</div><div><h4>Human > Corporate</h4><p>Brands that sound like people win. Press releases don't.</p></div></li>
+        <li><div class="rule-icon">&#128260;</div><div><h4>Consistency Compounds</h4><p>Winning brands post daily. Breeze averaged ~5 posts in 30 days.</p></div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ====== TAB 2: TRENDING ====== -->
+  <div id="tab-trending" class="tab-content">
+    <div class="section">
+      <div class="section-label">Platform Intelligence &middot; Click a date to expand</div>
+      <h2>What's Trending on Threads Right Now</h2>
+      <p style="font-size:14px;color:#666;margin-bottom:32px;">Each run adds a new dated snapshot. Click any date to expand or collapse that session's trends.</p>
+
+      <!-- ── March 26, 2026 ── -->
+      <div class="rec-group open" id="trend-2026-03-26">
+        <div class="rec-group-header" onclick="toggleRec(this)">
+          <div class="rec-date-left">
+            <span class="rec-date-text">March 26, 2026</span>
+            <span class="rec-date-badge">Latest</span>
+            <span class="rec-date-count">10 topics</span>
+          </div>
+          <span class="rec-chevron">&#8964;</span>
+        </div>
+        <div class="rec-group-body">
+          <div class="trending-grid">
+            <div class="trend-card"><div class="trend-tag hot">Hot Right Now</div><h4>TSA Meltdown — JFK &amp; ATL Chaos</h4><p>Jodi Picoult's JFK Terminal 8 thread hit <strong style="color:#00d68f">4K likes &amp; 233 comments</strong> — biggest travel post of the day. ATL at 90+ min. WSJ's CLEAR signup spike story running hot. LaGuardia travelers missed flights. NYT published a survival guide. Travelers furious across every feed.</p><div class="engagement">Reach: <span>massive</span> &middot; Breeze angle: <span>small airport flex is gold</span></div></div>
+            <div class="trend-card" style="border-color:#ff4d4d33;"><div class="trend-tag hot" style="background:#ff4d4d22;color:#ff6b6b;">Sensitive — Awareness Only</div><h4>LaGuardia Crash — Avoid Posting</h4><p>Dominating Aviation Threads. Both pilots killed when jet hit a fire truck at LGA (truck had no transponder). NTSB investigation underway. 26 near-collisions on runways in the years prior. Aviation community in mourning. <strong style="color:#ff6b6b;">Do not post anything aviation-humorous today.</strong> Sit this one out with respect.</p><div class="engagement">Community mood: <span style="color:#ff6b6b;">grieving</span> &middot; Action: <span style="color:#ff6b6b;">silence</span></div></div>
+            <div class="trend-card"><div class="trend-tag travel">Travel Threads (316K members)</div><h4>Solo Travel Boom</h4><p>"I'm planning my first solo trip. Where should I go??" (19 likes, 26 comments). "A woman who travels alone doesn't settle. She chooses." Women's solo travel dominating feed. Lots of engagement on solo trip recommendations.</p><div class="engagement">Engagement: <span>very high reply rate</span></div></div>
+            <div class="trend-card"><div class="trend-tag travel">Travel Threads</div><h4>Boarding Back-to-Front Debate — Viral</h4><p>"Dear Airlines: Board from the back of the plane first. Love, people who actually value efficiency." Lighting up Travel Threads. Overhead bin wars, carry-on gate-checking complaints, seat swap refusals all up.</p><div class="engagement">Comments: <span>very high</span> &middot; Format: <span>open letter works</span></div></div>
+            <div class="trend-card"><div class="trend-tag brand">Aviation Threads</div><h4>Small Airport TSA Flex — Viral Format</h4><p>CAK (Akron-Canton) airport posted "BREAKING: travelers at CAK are still waiting… 0–15 minutes" — <strong style="color:#00d68f">519 likes, biggest post in Aviation Threads community</strong>. Confirmed this format is made for Breeze's small-airport network. Fresh, funny, frictionless.</p><div class="engagement">519 likes, 23 comments, <span>26 shares</span></div></div>
+            <div class="trend-card"><div class="trend-tag brand">Competitor Watch</div><h4>United's Big Week + Delta Backlash</h4><p>United unveiling Coastliner A321neo with lie-flat Polaris seats on domestic routes + adding 250+ planes + Relax Row launching 2027. Delta suspended Congress travel perks and getting roasted. Flight prices doubled on some routes. Delta sentiment: very sour.</p><div class="engagement">United buzz: <span>positive</span> &middot; Delta: <span>angry crowd</span></div></div>
+            <div class="trend-card"><div class="trend-tag brand">Aviation Threads</div><h4>JetBlue Sale Rumors</h4><p>Bloomberg: JetBlue exploring sale to a rival. Aviation Threads reacting. Follows JetBlue's failed Spirit merger. Low engagement but aviation-insiders paying attention. Market consolidation narrative building.</p><div class="engagement">Audience: <span>aviation nerds + frequent flyers</span></div></div>
+            <div class="trend-card"><div class="trend-tag culture">Culture</div><h4>HBO Harry Potter Premiere Date Set</h4><p>Christmas 2026 confirmed. 62K posts. Strong millennial/Gen X engagement — exactly Breeze's 35–44 core demo. "HBO just gave us a year to plan a trip" connection is easy and organic.</p><div class="engagement">Posts: <span>62K</span> &middot; Audience match: <span>strong</span></div></div>
+            <div class="trend-card"><div class="trend-tag travel">Travel Threads</div><h4>Flight Checker Relatable Format</h4><p>"Never ask me for life advice / I check flights / more often than I check my emails" — 12 likes but massive shareability. Already spotted in Travel Threads and main feed. Breeze version would land well: owns the "checks flights obsessively" identity.</p><div class="engagement">Format: <span>copy-paste-able one-liner</span></div></div>
+            <div class="trend-card"><div class="trend-tag culture">Culture</div><h4>Foreign Tourism Anxiety</h4><p>"Dear foreign tourists planning to visit the US — are you insane? WHY????" went massively viral (8.3K likes, 353 reposts). US travel anxiety is high. Cross-over with inbound international travelers. Monitor for context on domestic travel sentiment.</p><div class="engagement">Top post: <span>8.3K likes</span> &middot; Sentiment: <span>anxious</span></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- future trend-group blocks will be inserted above this comment -->
+
+    </div>
+  </div>
+
+  <!-- ====== TAB 3: RECOMMENDED POSTS ====== -->
+  <div id="tab-recommended" class="tab-content">
+    <div class="section">
+      <div class="section-label">AI-Generated &middot; Click a date to expand</div>
+      <h2>Post Recommendations for @breezeairways</h2>
+      <p style="font-size:14px;color:#666;margin-bottom:32px;">One text post per day. Humor, travel vibes, pop culture. Each run adds a fresh batch of ready-to-post ideas — short, human, no heavy sell.</p>
+
+      <!-- ── Tone Guide ── -->
+      <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:20px;padding:28px 32px;margin-bottom:40px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#00a3ff;margin-bottom:6px;">Brand Voice</div>
+        <h3 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:20px;">Threads Tone of Voice</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#00d68f;margin-bottom:12px;">✦ Be this</p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">😊</span><div><span style="color:#fff;font-weight:600;font-size:14px;">Nice</span><span style="color:#555;font-size:13px;margin-left:8px;">Genuinely warm, fans first</span></div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">💙</span><div><span style="color:#fff;font-weight:600;font-size:14px;">Kind</span><span style="color:#555;font-size:13px;margin-left:8px;">Actively considerate, not just pleasant</span></div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">😂</span><div><span style="color:#fff;font-weight:600;font-size:14px;">Funny</span><span style="color:#555;font-size:13px;margin-left:8px;">Observational, self-aware, a little unexpected</span></div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">🥹</span><div><span style="color:#fff;font-weight:600;font-size:14px;">Cute</span><span style="color:#555;font-size:13px;margin-left:8px;">Light touch, occasionally wholesome</span></div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">🌀</span><div><span style="color:#fff;font-weight:600;font-size:14px;">Slightly unhinged</span><span style="color:#555;font-size:13px;margin-left:8px;">"Did a brand just post that?" in a good way</span></div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">💡</span><div><span style="color:#fff;font-weight:600;font-size:14px;">Helpful</span><span style="color:#555;font-size:13px;margin-left:8px;">Useful info, worn lightly</span></div></div>
+            </div>
+          </div>
+          <div>
+            <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#ff4d4d;margin-bottom:12px;">✕ Never this</p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">😤</span><div><span style="color:#777;font-weight:600;font-size:14px;text-decoration:line-through;">Mean</span><span style="color:#444;font-size:13px;margin-left:8px;">No punching down, ever</span></div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">🙄</span><div><span style="color:#777;font-weight:600;font-size:14px;text-decoration:line-through;">Rude</span><span style="color:#444;font-size:13px;margin-left:8px;">Even when the internet is having a moment</span></div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">😏</span><div><span style="color:#777;font-weight:600;font-size:14px;text-decoration:line-through;">Sarcastic</span><span style="color:#444;font-size:13px;margin-left:8px;">Dry is fine, bitter is not</span></div></div>
+              <div style="display:flex;align-items:flex-start;gap:10px;"><span style="font-size:16px;line-height:1.4;">😤</span><div><span style="color:#777;font-weight:600;font-size:14px;text-decoration:line-through;">Cocky</span><span style="color:#444;font-size:13px;margin-left:8px;">Quiet confidence only — no "we're better" energy</span></div></div>
+            </div>
+            <div style="margin-top:20px;padding:14px 16px;background:#111;border-radius:12px;border-left:3px solid #00a3ff;">
+              <p style="font-size:12px;color:#666;line-height:1.6;margin:0;">The goal is to sound like someone who genuinely loves what they're building — not a brand hitting a KPI. Think <span style="color:#999;">Ritz Crackers, Tim Hortons, EasyJet</span> — short, human, no CTA.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── March 26, 2026 ── -->
+      <div class="rec-group open" id="rec-2026-03-26">
+        <div class="rec-group-header" onclick="toggleRec(this)">
+          <div class="rec-date-left">
+            <span class="rec-date-text">March 26, 2026</span>
+            <span class="rec-date-badge">Latest</span>
+            <span class="rec-date-count">8 posts</span>
+          </div>
+          <span class="rec-chevron">&#8964;</span>
+        </div>
+        <div class="rec-group-body">
+          <div class="trending-grid">
+
+            <div class="trend-card" style="border-color:#f59e0b33;">
+              <div class="trend-tag hot">Timely &middot; Today</div>
+              <h4>TSA chaos — small airport flex</h4>
+              <p style="font-size:15px;color:#e0e0e0;line-height:1.7;margin-bottom:12px;">"the 0–12 minute security line era ✈️"</p>
+              <p>Jodi Picoult's JFK rant hit 4K likes today. CLEAR signups spiking. JFK took 45 mins with pre-check. Breeze's smaller airports don't need a caption — just the number.</p>
+            </div>
+
+            <div class="trend-card" style="border-color:#06b6d433;">
+              <div class="trend-tag culture">Relatable &middot; Travel vibe</div>
+              <h4>Flight checker energy</h4>
+              <p style="font-size:15px;color:#e0e0e0;line-height:1.7;margin-bottom:12px;">"never ask me for life advice<br>I check flights<br>more often than I check my texts"</p>
+              <p>Confirmed performing in Travel Threads on this scan. Short, human, no sell. Feels like something a real person posted.</p>
+            </div>
+
+            <div class="trend-card" style="border-color:#00d68f33;">
+              <div class="trend-tag brand">Slightly unhinged &middot; Brand-specific</div>
+              <h4>Small airport personal win</h4>
+              <p style="font-size:15px;color:#e0e0e0;line-height:1.7;margin-bottom:12px;">"genuinely cannot explain why flying out of a small airport feels like a personal win but it does 🛫"</p>
+              <p>Warm, slightly unhinged, and specific to Breeze's whole thing. Fans who fly CHS, PVD, or BDL will feel seen. Nobody's being mean — it's just a vibe.</p>
+            </div>
+
+            <div class="trend-card" style="border-color:#00a3ff33;">
+              <div class="trend-tag travel">Travel &middot; Humor</div>
+              <h4>The early flight regret</h4>
+              <p style="font-size:15px;color:#e0e0e0;line-height:1.7;margin-bottom:12px;">"booked a 6am flight to save $40. I would like to speak to past me."</p>
+              <p>Relatable format confirmed across both Travel Threads and main feed. Feels like a real person, not a brand. No product mention needed.</p>
+            </div>
+
+            <div class="trend-card" style="border-color:#ec489933;">
+              <div class="trend-tag brand">Cute &middot; Brand voice</div>
+              <h4>Your seat is waiting</h4>
+              <p style="font-size:15px;color:#e0e0e0;line-height:1.7;margin-bottom:12px;">"we assigned you a seat. it has your name on it and everything. 🥹"</p>
+              <p>Seat swap drama is still swirling in Travel Threads. This plays off it without being mean or preachy — just warm and a little goofy. The 🥹 does a lot of heavy lifting.</p>
+            </div>
+
+            <div class="trend-card" style="border-color:#a855f733;">
+              <div class="trend-tag travel">Solo travel &middot; Conversation</div>
+              <h4>Solo trip era</h4>
+              <p style="font-size:15px;color:#e0e0e0;line-height:1.7;margin-bottom:12px;">"solo trip era is officially here. where are we going first?"</p>
+              <p>Solo travel content dominating Travel Threads — "first solo trip" and women-traveling-alone posts generating the highest comment counts of any category today.</p>
+            </div>
+
+            <div class="trend-card" style="border-color:#f59e0b33;">
+              <div class="trend-tag culture">Pop culture &middot; Timely</div>
+              <h4>Harry Potter premiere announced</h4>
+              <p style="font-size:15px;color:#e0e0e0;line-height:1.7;margin-bottom:12px;">"christmas 2026 is officially a trip. that's just what's happening. 🧙"</p>
+              <p>Same timely energy around the HBO premiere — but drops the "you're welcome" which was a bit cocky. This version is cute and slightly unhinged, like someone making a personal declaration.</p>
+            </div>
+
+            <div class="trend-card" style="border-color:#00d68f33;">
+              <div class="trend-tag brand">Human moment &middot; Warm</div>
+              <h4>Lift-off feeling</h4>
+              <p style="font-size:15px;color:#e0e0e0;line-height:1.7;margin-bottom:12px;">"that feeling when the plane finally lifts off and you realize you actually did it 🛫"</p>
+              <p>With flying anxiety elevated today (LGA incident + fear-of-flying posts trending), a warm moment post lands with empathy — not sales energy.</p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <!-- future rec-group blocks will be inserted above this comment -->
+
+    </div>
+  </div>
+
+  <!-- ====== TAB 3: CALENDAR ====== -->
+  <div id="tab-calendar" class="tab-content">
+    <div class="section">
+      <div class="cal-controls">
+        <div>
+          <div class="section-label">Content Calendar</div>
+          <h2 id="cal-month-title">March 2026</h2>
+        </div>
+        <div class="cal-nav">
+          <button onclick="changeMonth(-1)">&larr; Prev</button>
+          <button onclick="changeMonth(0)">Today</button>
+          <button onclick="changeMonth(1)">Next &rarr;</button>
+        </div>
+      </div>
+      <div class="cal-legend" id="cal-legend"></div>
+      <div id="calendar-grid" class="cal-grid"></div>
+    </div>
+  </div>
+
+  <div class="footer"><p>Breeze Airways &middot; Threads Intelligence Report &middot; Generated March 26, 2026</p></div>
+</div>
+
+<!-- Event Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">New Post</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label>Post Title</label>
+        <input type="text" id="evt-title" placeholder="e.g. The One-Word Power Move">
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Date</label>
+          <input type="date" id="evt-date">
+        </div>
+        <div class="modal-field">
+          <label>Post Type</label>
+          <select id="evt-type"></select>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Draft Copy</label>
+        <textarea id="evt-draft" placeholder="Write the post copy here..."></textarea>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Best Time</label>
+          <input type="text" id="evt-time" placeholder="e.g. 11am - 1pm ET">
+        </div>
+        <div class="modal-field">
+          <label>Goal</label>
+          <input type="text" id="evt-goal" placeholder="e.g. 50+ comments">
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Tags</label>
+        <div class="tags-container" id="evt-tags"></div>
+        <div class="tag-input-row">
+          <input type="text" id="tag-input" placeholder="Add a tag..." onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}">
+          <select id="tag-color">
+            <option value="blue">Blue</option>
+            <option value="green">Green</option>
+            <option value="orange">Orange</option>
+            <option value="pink">Pink</option>
+            <option value="purple">Purple</option>
+            <option value="red">Red</option>
+            <option value="cyan">Cyan</option>
+          </select>
+          <button onclick="addTag()">+ Add</button>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Strategy Notes</label>
+        <textarea id="evt-notes" placeholder="Why this post? What trend does it ride?" style="min-height:80px;"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-delete" id="btn-delete" onclick="deleteEvent()" style="display:none;margin-right:auto;">Delete</button>
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveEvent()">Save Post</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-overlay" id="cat-modal-overlay">
+  <div class="modal cat-modal">
+    <div class="modal-header">
+      <h3>Add Post Type</h3>
+      <button class="modal-close" onclick="closeCatModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label>Name</label>
+        <input type="text" id="cat-name" placeholder="e.g. Promo, UGC, Collab...">
+      </div>
+      <div class="modal-field">
+        <label>Color</label>
+        <div class="cat-color-grid" id="cat-color-grid"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeCatModal()">Cancel</button>
+        <button class="btn-save" onclick="saveCat()">Add Type</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+let events = [
+  { id: 1, date: '2026-03-25', title: 'TSA Chaos Contrast', type: 'timely', tags: [{text:'Post Today',color:'red'},{text:'Competitive',color:'orange'}], draft: '4-hour TSA lines at Houston.\n3:50am chaos at O\'Hare.\n\nMeanwhile, our airports: 😎\n\nSmaller airports. Bigger vibes.', time: '11am - 1pm ET', goal: '50+ comments', notes: 'TSA is THE story right now. NYT posted about it today. Breeze\'s smaller airport model is the flex.' },
+  { id: 2, date: '2026-03-26', title: 'Dream Vacation in 4 Words', type: 'engagement', tags: [{text:'Comment Driver',color:'blue'},{text:'Audience Intel',color:'green'}], draft: 'Describe your dream vacation in 4 words. Go.', time: '12pm - 2pm ET', goal: '100+ comments', notes: 'This format generated 4.2K comments for another account. Pure comment fuel. Also gives audience intel.' },
+  { id: 3, date: '2026-03-27', title: 'Nonstop.', type: 'brand', tags: [{text:'Brand Voice',color:'green'},{text:'Trending Format',color:'purple'}], draft: 'Nonstop.', time: '10am - 12pm ET', goal: '30+ comments, high shares', notes: 'Friday energy. One-word trend (Subway, BK) is dominating. "Nonstop" = what Breeze sells + a vibe.' },
+  { id: 4, date: '2026-03-28', title: 'The 2am Booking Urge', type: 'vibe', tags: [{text:'Shareable',color:'cyan'},{text:'Weekend Vibes',color:'purple'}], draft: 'the urge to book a flight at 2am and actually go this time', time: '9am - 11am ET', goal: 'High shares + reposts', notes: 'Saturday scroll day. Instagram (2.4K) and Expedia both using this format. Weekend wanderlust energy.' },
+  { id: 5, date: '2026-03-29', title: 'Underrated Cities List', type: 'destination', tags: [{text:'Shareable',color:'cyan'},{text:'Destination Marketing',color:'pink'}], draft: 'Forget the 50-place bucket list. Here are 7 underrated U.S. cities you need to visit before everyone else catches on:\n\n1. Providence — the food scene is unreal\n2. Charleston — charm that can\'t be faked\n3. Savannah — haunted tours > tourist traps\n4. Jacksonville — 22 miles of beach, zero crowds\n5. New Orleans — always, obviously\n6. Richmond — the brewery capital nobody talks about\n7. Burlington — fall foliage that stops traffic\n\nAll nonstop with Breeze. Which one are you adding?', time: '10am - 12pm ET', goal: '50+ comments, 100+ shares', notes: 'Sunday = trip planning. Bucket list format got 2.1K likes, 623 shares in Travel Threads.' },
+  { id: 6, date: '2026-03-30', title: 'Flight Outfit Debate', type: 'engagement', tags: [{text:'Comment Driver',color:'blue'},{text:'Brand Voice',color:'green'}], draft: 'Friendly debate: What are you wearing on the plane?\n\nA) Sweats. Obviously.\nB) Jeans. I have standards.\nC) Full airport fit — matching set, carry-on coordinated\nD) Whatever was closest to the door', time: '12pm - 2pm ET', goal: '80+ comments', notes: 'Monday lunch scroll. Jeans debate got 79 comments. Poll posts crush on Threads. Pure personality.' },
+  { id: 7, date: '2026-03-31', title: 'Crew Q&A', type: 'crew', tags: [{text:'Employee Pride',color:'purple'},{text:'Comment Driver',color:'blue'}], draft: 'A day in the life of a Breeze First Officer ✈️\n\n"The sky wasn\'t the limit... it is the office."\n\nWhat would you ask our pilots if you could? Drop it below 👇', time: '11am - 1pm ET', goal: '20+ comments (10x current avg)', notes: 'Crew content is your #1 performer by views (615). Adding a question transforms broadcast into conversation.' },
+];
+let currentTags = [];
+let nextId = 8;
+let currentMonth = 2;
+let currentYear = 2026;
+let editingId = null;
+
+// ===== POST TYPE CATEGORIES =====
+const availableColors = [
+  { id: 'amber', hex: '#f59e0b' }, { id: 'blue', hex: '#00a3ff' }, { id: 'emerald', hex: '#00d68f' },
+  { id: 'cyan', hex: '#06b6d4' }, { id: 'pink', hex: '#ec4899' }, { id: 'purple', hex: '#a855f7' },
+  { id: 'red', hex: '#ef4444' }, { id: 'lime', hex: '#84cc16' }, { id: 'indigo', hex: '#6366f1' },
+  { id: 'rose', hex: '#f43f5e' }, { id: 'teal', hex: '#14b8a6' }, { id: 'sky', hex: '#38bdf8' },
+];
+let categories = [
+  { key: 'timely', name: 'Timely', color: '#f59e0b' },
+  { key: 'engagement', name: 'Engagement', color: '#00a3ff' },
+  { key: 'brand', name: 'Brand Voice', color: '#00d68f' },
+  { key: 'vibe', name: 'Vibe', color: '#06b6d4' },
+  { key: 'destination', name: 'Destination', color: '#ec4899' },
+  { key: 'crew', name: 'Crew', color: '#a855f7' },
+];
+let selectedCatColor = '#00a3ff';
+
+function renderLegend() {
+  const el = document.getElementById('cal-legend');
+  el.innerHTML = categories.map((c, i) =>
+    `<div class="cal-legend-item">
+      <div class="cal-legend-dot" style="background:${c.color}"></div>
+      <input class="legend-edit-name" value="${c.name}" onchange="renameCat(${i}, this.value)" title="Click to rename">
+      <button class="legend-remove" onclick="removeCat(${i})" title="Remove type">&times;</button>
+    </div>`
+  ).join('') + `<button class="cal-legend-add" onclick="openCatModal()" title="Add post type">+</button>`;
+}
+
+function renderTypeSelect(selectedKey) {
+  const sel = document.getElementById('evt-type');
+  sel.innerHTML = categories.map(c => `<option value="${c.key}"${c.key === selectedKey ? ' selected' : ''}>${c.name}</option>`).join('');
+}
+
+function renameCat(index, newName) {
+  if (!newName.trim()) return;
+  const oldKey = categories[index].key;
+  categories[index].name = newName.trim();
+  renderLegend();
+  renderCalendar();
+}
+
+function removeCat(index) {
+  const cat = categories[index];
+  const used = events.filter(e => e.type === cat.key).length;
+  if (used > 0 && !confirm(`"${cat.name}" is used by ${used} post(s). Events will keep their type but it won't appear in the legend. Remove?`)) return;
+  categories.splice(index, 1);
+  renderLegend();
+  renderCalendar();
+}
+
+function openCatModal() {
+  selectedCatColor = '#00a3ff';
+  document.getElementById('cat-name').value = '';
+  renderCatColors();
+  document.getElementById('cat-modal-overlay').classList.add('open');
+}
+
+function closeCatModal() {
+  document.getElementById('cat-modal-overlay').classList.remove('open');
+}
+
+function renderCatColors() {
+  document.getElementById('cat-color-grid').innerHTML = availableColors.map(c =>
+    `<div class="cat-color-opt${c.hex === selectedCatColor ? ' selected' : ''}" style="background:${c.hex}" onclick="selectCatColor('${c.hex}')"></div>`
+  ).join('');
+}
+
+function selectCatColor(hex) {
+  selectedCatColor = hex;
+  renderCatColors();
+}
+
+function saveCat() {
+  const name = document.getElementById('cat-name').value.trim();
+  if (!name) return alert('Enter a name for the post type.');
+  const key = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (categories.find(c => c.key === key)) return alert('A type with that name already exists.');
+  categories.push({ key, name, color: selectedCatColor });
+  closeCatModal();
+  renderLegend();
+  renderCalendar();
+  // Also inject dynamic CSS for the new type
+  injectCategoryCSS(key, selectedCatColor);
+}
+
+function injectCategoryCSS(key, color) {
+  const style = document.createElement('style');
+  style.textContent = `.cal-event.${key} { background: ${color}22; color: ${color}; border-left: 3px solid ${color}; }`;
+  document.head.appendChild(style);
+}
+
+function getCatColor(key) {
+  const cat = categories.find(c => c.key === key);
+  return cat ? cat.color : '#555';
+}
+
+document.getElementById('cat-modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeCatModal(); });
+
+// ===== TABS =====
+function toggleRec(header) {
+  const group = header.closest('.rec-group');
+  group.classList.toggle('open');
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'calendar') { renderLegend(); renderCalendar(); }
+}
+
+// ===== CALENDAR =====
+const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function changeMonth(dir) {
+  if (dir === 0) { currentMonth = 2; currentYear = 2026; }
+  else { currentMonth += dir; if (currentMonth > 11) { currentMonth = 0; currentYear++; } if (currentMonth < 0) { currentMonth = 11; currentYear--; } }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  const title = document.getElementById('cal-month-title');
+  title.textContent = monthNames[currentMonth] + ' ' + currentYear;
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const daysInPrev = new Date(currentYear, currentMonth, 0).getDate();
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+  let html = dayNames.map(d => `<div class="cal-header-cell">${d}</div>`).join('');
+
+  // Previous month fill
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const day = daysInPrev - i;
+    html += `<div class="cal-cell other-month"><div class="cal-date">${day}</div></div>`;
+  }
+
+  // Current month
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = currentYear + '-' + String(currentMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const isToday = dateStr === todayStr;
+    const dayEvents = events.filter(e => e.date === dateStr);
+    let eventsHtml = dayEvents.map(e => {
+      const miniTags = (e.tags||[]).map(t => `<span class="cal-mini-tag">${t.text}</span>`).join('');
+      return `<div class="cal-event ${e.type}" onclick="event.stopPropagation(); openEdit(${e.id})" title="${e.draft.substring(0,80)}...">${e.title}${miniTags ? '<div class="cal-event-tags">'+miniTags+'</div>' : ''}</div>`;
+    }).join('');
+
+    html += `<div class="cal-cell${isToday ? ' today' : ''}" onclick="openNew('${dateStr}')">
+      <div class="cal-date">${d}</div>
+      ${eventsHtml}
+      <button class="cal-add-btn" onclick="event.stopPropagation(); openNew('${dateStr}')">+</button>
+    </div>`;
+  }
+
+  // Next month fill
+  const totalCells = firstDay + daysInMonth;
+  const remaining = (7 - (totalCells % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="cal-cell other-month"><div class="cal-date">${i}</div></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+// ===== MODAL =====
+function openNew(dateStr) {
+  editingId = null;
+  currentTags = [];
+  document.getElementById('modal-title').textContent = 'New Post';
+  document.getElementById('evt-title').value = '';
+  document.getElementById('evt-date').value = dateStr;
+  renderTypeSelect('engagement');
+  document.getElementById('evt-draft').value = '';
+  document.getElementById('evt-time').value = '';
+  document.getElementById('evt-goal').value = '';
+  document.getElementById('evt-notes').value = '';
+  document.getElementById('tag-input').value = '';
+  document.getElementById('btn-delete').style.display = 'none';
+  renderTags();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function openEdit(id) {
+  const evt = events.find(e => e.id === id);
+  if (!evt) return;
+  editingId = id;
+  currentTags = (evt.tags || []).map(t => ({...t}));
+  document.getElementById('modal-title').textContent = 'Edit Post';
+  document.getElementById('evt-title').value = evt.title;
+  document.getElementById('evt-date').value = evt.date;
+  renderTypeSelect(evt.type);
+  document.getElementById('evt-draft').value = evt.draft;
+  document.getElementById('evt-time').value = evt.time || '';
+  document.getElementById('evt-goal').value = evt.goal || '';
+  document.getElementById('evt-notes').value = evt.notes || '';
+  document.getElementById('tag-input').value = '';
+  document.getElementById('btn-delete').style.display = 'inline-block';
+  renderTags();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function renderTags() {
+  const container = document.getElementById('evt-tags');
+  container.innerHTML = currentTags.map((t, i) =>
+    `<div class="tag-chip tag-color-${t.color}">
+      <span>${t.text}</span>
+      <button class="tag-remove" onclick="removeTag(${i})">&times;</button>
+    </div>`
+  ).join('');
+}
+
+function addTag() {
+  const input = document.getElementById('tag-input');
+  const color = document.getElementById('tag-color').value;
+  const text = input.value.trim();
+  if (!text) return;
+  currentTags.push({ text, color });
+  input.value = '';
+  renderTags();
+  input.focus();
+}
+
+function removeTag(index) {
+  currentTags.splice(index, 1);
+  renderTags();
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId = null;
+}
+
+function saveEvent() {
+  const title = document.getElementById('evt-title').value.trim();
+  const date = document.getElementById('evt-date').value;
+  const type = document.getElementById('evt-type').value;
+  const draft = document.getElementById('evt-draft').value;
+  const time = document.getElementById('evt-time').value;
+  const goal = document.getElementById('evt-goal').value;
+  const notes = document.getElementById('evt-notes').value;
+  const tags = currentTags.map(t => ({...t}));
+  if (!title || !date) return alert('Title and date are required.');
+
+  if (editingId) {
+    const evt = events.find(e => e.id === editingId);
+    evt.title = title; evt.date = date; evt.type = type; evt.draft = draft; evt.time = time; evt.goal = goal; evt.notes = notes; evt.tags = tags;
+  } else {
+    events.push({ id: nextId++, date, title, type, draft, time, goal, notes, tags });
+  }
+  closeModal();
+  renderCalendar();
+}
+
+function deleteEvent() {
+  if (!editingId) return;
+  if (!confirm('Delete this post?')) return;
+  events = events.filter(e => e.id !== editingId);
+  closeModal();
+  renderCalendar();
+}
+
+// Close modal on overlay click
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Close modal on Escape
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+// Initial render
+renderLegend();
+renderCalendar();
+</script>
+</body>
+</html>
