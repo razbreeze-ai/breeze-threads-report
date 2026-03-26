@@ -1,0 +1,7 @@
+# Only track report files and robots.txt
+*.pdf
+*.xlsx
+*.png
+*.jpg
+.claude/
+.DS_Store
